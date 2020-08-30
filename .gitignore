@@ -1,0 +1,17 @@
+# file: .gitignore
+# Linktester (version 0.1 beta)
+# dimishpatriot@github.com, 2020
+
+
+# files
+debug.*
+*.log
+*.sublime*
+
+
+# folders
+log/
+venv/
+__pycache__/
+.pytest_cashe/
+
