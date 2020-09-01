@@ -45,6 +45,9 @@ def log_file(page_url):
     filename = os.path.join(log_folder, filename)  # add folder name
 
     with open(filename, "w", encoding="utf-8") as f:
+        f.write("-----------------------\n")
+        f.write("|  Linktester report  |\n")
+        f.write("-----------------------\n")
         yield f
 
 
