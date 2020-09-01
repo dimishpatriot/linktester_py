@@ -9,9 +9,7 @@ import time
 
 
 # === FUNCTIONS === #
-def write_main_data(url, len_of_list, type_of_data,
-                    log_file, output, start_time):
-    """ """
+def write_main_data(url: str, len_of_list: int, type_of_data: str, start_time: float, log_file, output) -> None:
     for out in output:
         out(f"\n=== Test {type_of_data} on the page: {url} ===\n")
         out(f"Start time: {time.ctime(start_time)}\n")
@@ -19,9 +17,7 @@ def write_main_data(url, len_of_list, type_of_data,
         out(f"Logfile: {log_file.name} ({log_file.encoding})\n")
 
 
-def write_test_data(result, output,
-                    start_time, finish_time):
-    """ """
+def write_test_data(result: dict, start_time: float, finish_time: float, output) -> None:
     for out in output:
         out("\nResults:\n")
         for k, v in result.items():
@@ -32,7 +28,7 @@ def write_test_data(result, output,
         out(f"Time to complete: {complete_time} sec.\n")
 
 
-def validate_status(status_code, test):
+def validate_status(status_code: int, test: dict) -> bool:
     result = True
     if status_code != requests.codes.ok:
         if 400 <= status_code < 500:
@@ -45,12 +41,11 @@ def validate_status(status_code, test):
     return result
 
 
-def get_num_normal_links(test):
-    return test["all links"] - \
-        test["broken"] - test["server errors"] - test["redirect"]
+def get_num_normal_links(test: dict) -> int:
+    return test["all links"] - test["broken"] - test["server errors"] - test["redirect"]
 
 
-def get_status_code(link, headers):
+def get_status_code(link: str, headers: dict) -> int:
     try:
         r = requests.get(link, headers=headers)
         status_code = r.status_code
@@ -60,14 +55,13 @@ def get_status_code(link, headers):
     return status_code
 
 
-def get_status_str(link, status_code):
+def get_status_str(link: str, status_code: int) -> str:
     return "{} - [{}]\n".format(link, status_code)
 
 
 # === TESTS === #
 @pytest.mark.links
 def test_links_on_page(page_url, links_on_page, headers, log_file):
-    """ """
     start_time = time.time()
     write_main_data(url=page_url,
                     len_of_list=len(links_on_page),
@@ -87,13 +81,16 @@ def test_links_on_page(page_url, links_on_page, headers, log_file):
     log_file.write("\nTesting links:\n")
 
     for link in links_on_page:
-        status_code = get_status_code(link, headers)
-        status_str = get_status_str(link, status_code)
+        status_code = get_status_code(link=link,
+                                      headers=headers)
+        status_str = get_status_str(link=link,
+                                    status_code=status_code)
 
         print(f"{status_str}")
         log_file.write(status_str)
 
-        result = validate_status(status_code, test)
+        result = validate_status(status_code=status_code,
+                                 test=test)
 
     finish_time = time.time()
     test["normal"] = get_num_normal_links(test)
@@ -108,7 +105,6 @@ def test_links_on_page(page_url, links_on_page, headers, log_file):
 
 @pytest.mark.images
 def test_img_on_page(page_url, img_on_page, headers, log_file):
-    """ """
     start_time = time.time()
     write_main_data(url=page_url,
                     len_of_list=len(img_on_page),
@@ -128,12 +124,15 @@ def test_img_on_page(page_url, img_on_page, headers, log_file):
     log_file.write("\nTesting images:\n")
 
     for link in img_on_page:
-        status_code = get_status_code(link, headers)
-        status_str = get_status_str(link, status_code)
+        status_code = get_status_code(link=link,
+                                      headers=headers)
+        status_str = get_status_str(link=link,
+                                    status_code=status_code)
         log_file.write(status_str)
 
         print(f"{status_str}")
-        result = validate_status(status_code, test)
+        result = validate_status(status_code=status_code,
+                                 test=test)
 
     finish_time = time.time()
     test["normal"] = get_num_normal_links(test)

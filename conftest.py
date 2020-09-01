@@ -12,7 +12,6 @@ from selenium import webdriver
 
 # === TEST SETTINGS === #
 def pytest_addoption(parser):
-    """ """
     parser.addoption("--url",
                      default="https://test.com",
                      help="input URL for testing")
@@ -21,7 +20,6 @@ def pytest_addoption(parser):
 # === FIXTURES === #
 @pytest.fixture(scope="session")
 def driver():
-    """ """
     driver = webdriver.Chrome()
     yield driver
     driver.quit()
@@ -29,7 +27,6 @@ def driver():
 
 @pytest.fixture(scope="session")
 def log_file(page_url):
-    """ """
     log_folder = os.path.join(os.getcwd(), "log")
     filename = ''.join(page_url.split("//")[1:])  # remove protocol
 
@@ -53,20 +50,17 @@ def log_file(page_url):
 
 @pytest.fixture(scope="session")
 def headers():
-    """ """
     return {"user-agent": "chrome"}
 
 
 @pytest.fixture(scope="session")
 def page_url(pytestconfig):
-    """ """
     url = "https://{}".format(pytestconfig.getoption("--url").split("//")[-1])
     return url
 
 
 @pytest.fixture()
 def links_on_page(page_url, driver):
-    """ """
     links = set()  # change to set?
     driver.get(page_url)
     urls = driver.find_elements_by_tag_name("a")
@@ -85,7 +79,6 @@ def links_on_page(page_url, driver):
 
 @pytest.fixture()
 def img_on_page(page_url, driver):
-    """ """
     images = set()  # change to set?
     driver.get(page_url)
     urls = driver.find_elements_by_tag_name("img")
