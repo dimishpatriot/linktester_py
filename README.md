@@ -1,8 +1,8 @@
 # Linktester (version 0.1 beta)
 
-The program is designed to test links with the <a> tag and images with the <img> tag on the page.
+The program is designed to test links and images on the page.
 
-To use the program, you will need:
+To use the program required:
 
 - python version > 3.6 (https://www.python.org/downloads/)
 - requests (https://pypi.org/project/requests/)
@@ -11,9 +11,9 @@ To use the program, you will need:
 
 See modules for my working environment in the file "requirements.txt."
 
-To start testing, just type in the line with the program files
+To start testing, just type in console in the tester folder.
 
-**pytest linktester.py --url sitename.com**
+**pytest linktester.py --url sitename**
 
 Adding other pytest options is available, for example adding -k "images" or -k "links" will only test images or links.
 
