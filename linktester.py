@@ -1,11 +1,13 @@
 # file: test_linktester.py
-# Linktester (version 0.1 beta)
+# Linktester (version 0.2 beta)
 # dimishpatriot@github.com, 2020
 
 # === IMPORTS === #
 import pytest
 import requests
 import time
+from queue import Queue
+from threading import Thread
 
 
 # === FUNCTIONS === #
@@ -20,29 +22,23 @@ def write_main_data(url: str, len_of_list: int, type_of_data: str, start_time: f
 def write_test_data(result: dict, start_time: float, finish_time: float, output) -> None:
     for out in output:
         out("\nResults:\n")
+
         for k, v in result.items():
             out(f"- {k}: {v}\n")
 
         out(f"Finish time: {time.ctime(finish_time)}\n")
-        complete_time = int(finish_time - start_time)
-        out(f"Time to complete: {complete_time} sec.\n")
+        out(f"Time to complete: {round(finish_time - start_time, 2)} sec.\n")
 
 
-def validate_status(status_code: int, test: dict) -> bool:
-    result = True
-    if status_code != requests.codes.ok:
-        if 400 <= status_code < 500:
-            result = False
-            test["broken"] += 1
-        elif 500 <= status_code < 600:
-            test["server errors"] += 1
-        elif 300 <= status_code < 400:
-            test["redirect pages"] += 1
-    return result
-
-
-def get_num_normal_links(test: dict) -> int:
-    return test["all links"] - test["broken"] - test["server errors"] - test["redirect"]
+def validate_status(status_code: int, test: dict) -> None:
+    if 200 <= status_code < 300:
+        test["normal"] += 1
+    elif 300 <= status_code < 400:
+        test["redirect pages"] += 1
+    elif 400 <= status_code < 500:
+        test["broken"] += 1
+    elif 500 <= status_code < 600:
+        test["server errors"] += 1
 
 
 def get_status_code(link: str, headers: dict) -> int:
@@ -51,7 +47,6 @@ def get_status_code(link: str, headers: dict) -> int:
         status_code = r.status_code
     except requests.exceptions.ConnectionError:
         status_code = 520
-
     return status_code
 
 
@@ -59,10 +54,51 @@ def get_status_str(link: str, status_code: int) -> str:
     return "{} - [{}]\n".format(link, status_code)
 
 
+def check_link(q, test, headers, log_file):
+    while True:
+        link = q.get()
+        if link is None:
+            break
+        else:
+            status_code = get_status_code(link=link,
+                                          headers=headers)
+            status_str = get_status_str(link=link,
+                                        status_code=status_code)
+            print(f"{status_str}")
+            log_file.write(status_str)
+
+            validate_status(status_code=status_code,
+                            test=test)
+
+
+def check_links_in_multithreading(link_list, headers, log_file, num_threads):
+    result = {"normal": 0,
+              "redirect": 0,
+              "broken": 0,
+              "server errors": 0}
+
+    print(f"Working threads = {num_threads}")
+    log_file.write(f"\nWorking threads = {num_threads}\n")
+    q = Queue(num_threads * num_threads)
+    th = list()
+    for i in range(num_threads):
+        th.append(Thread(target=check_link, args=(
+            q, result, headers, log_file)))
+        th[i].start()
+    for link in link_list:
+        q.put(link)
+    for i in range(num_threads):
+        q.put(None)
+    for i in range(num_threads):
+        th[i].join()
+    return result
+
+
 # === TESTS === #
-@pytest.mark.links
-def test_links_on_page(page_url, links_on_page, headers, log_file):
+@ pytest.mark.links
+def test_links_on_page(page_url, links_on_page, headers, log_file, num_threads):
     start_time = time.time()
+
     write_main_data(url=page_url,
                     len_of_list=len(links_on_page),
                     type_of_data="links",
@@ -70,41 +106,20 @@ def test_links_on_page(page_url, links_on_page, headers, log_file):
                     output=(print, log_file.write),
                     start_time=start_time)
 
-    result = True
-    test = {"all links": len(links_on_page),
-            "normal": 0,
-            "redirect": 0,
-            "broken": 0,
-            "server errors": 0}
-
-    print("\nTesting links:\n")
-    log_file.write("\nTesting links:\n")
-
-    for link in links_on_page:
-        status_code = get_status_code(link=link,
-                                      headers=headers)
-        status_str = get_status_str(link=link,
-                                    status_code=status_code)
-
-        print(f"{status_str}")
-        log_file.write(status_str)
-
-        result = validate_status(status_code=status_code,
-                                 test=test)
-
+    result = check_links_in_multithreading(
+        links_on_page, headers, log_file, num_threads)
     finish_time = time.time()
-    test["normal"] = get_num_normal_links(test)
 
-    write_test_data(result=test,
+    write_test_data(result=result,
                     output=(print, log_file.write),
                     start_time=start_time,
                     finish_time=finish_time)
 
-    assert result == 1
+    assert result["normal"] + result["redirect"] == len(links_on_page)
 
 
-@pytest.mark.images
-def test_img_on_page(page_url, img_on_page, headers, log_file):
+@ pytest.mark.images
+def test_img_on_page(page_url, img_on_page, headers, log_file, num_threads):
     start_time = time.time()
     write_main_data(url=page_url,
                     len_of_list=len(img_on_page),
@@ -113,33 +128,12 @@ def test_img_on_page(page_url, img_on_page, headers, log_file):
                     output=(print, log_file.write),
                     start_time=start_time)
 
-    result = True
-    test = {"all links": len(img_on_page),
-            "normal": 0,
-            "redirect": 0,
-            "broken": 0,
-            "server errors": 0}
-
-    print("\nTesting images:\n")
-    log_file.write("\nTesting images:\n")
-
-    for link in img_on_page:
-        status_code = get_status_code(link=link,
-                                      headers=headers)
-        status_str = get_status_str(link=link,
-                                    status_code=status_code)
-        log_file.write(status_str)
-
-        print(f"{status_str}")
-        result = validate_status(status_code=status_code,
-                                 test=test)
-
+    result = check_links_in_multithreading(img_on_page, headers, log_file, num_threads)
     finish_time = time.time()
-    test["normal"] = get_num_normal_links(test)
 
-    write_test_data(result=test,
+    write_test_data(result=result,
                     output=(print, log_file.write),
                     start_time=start_time,
                     finish_time=finish_time)
 
-    assert result == 1
+    assert result["normal"] + result["redirect"] == len(img_on_page)

@@ -1,5 +1,5 @@
 # file: conftest.py
-# Linktester (version 0.1 beta)
+# Linktester (version 0.2 beta)
 # dimishpatriot@github.com, 2020
 
 
@@ -15,6 +15,9 @@ def pytest_addoption(parser):
     parser.addoption("--url",
                      default="https://test.com",
                      help="input URL for testing")
+    parser.addoption("--th",
+                     default=1,
+                     help="input num threads")
 
 
 # === FIXTURES === #
@@ -26,6 +29,11 @@ def driver():
 
 
 @pytest.fixture(scope="session")
+def num_threads(pytestconfig):
+    return int(pytestconfig.getoption("--th"))
+
+
+@pytest.fixture(scope="session")
 def log_file(page_url):
     log_folder = os.path.join(os.getcwd(), "log")
     filename = ''.join(page_url.split("//")[1:])  # remove protocol
@@ -34,17 +42,17 @@ def log_file(page_url):
     filename = filename.replace('/', '_')
     if filename[-1] != '_':
         filename += "_"
-
-    filename += str(int(time.time())) + ".txt"  # add time stamp
+    filename += str(int(time.time())) + ".txt"  # add time stamp and extension
 
     if not os.path.exists(log_folder):
         os.mkdir(log_folder)
     filename = os.path.join(log_folder, filename)  # add folder name
 
     with open(filename, "w", encoding="utf-8") as f:
-        f.write("-----------------------\n")
-        f.write("|  Linktester report  |\n")
-        f.write("-----------------------\n")
+        f.write("----------------------------------------------------------\n")
+        f.write("|                   * Linktester v.0.2 *                 |\n")
+        f.write("|         github.com/dimishpatriot/linktester_py         |\n")
+        f.write("----------------------------------------------------------\n")
         yield f
 
 
